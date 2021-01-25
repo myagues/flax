@@ -95,6 +95,7 @@ def dot_product_attention(query: Array,
 
   # normalize the attention weights
   attn_weights = jax.nn.softmax(attn_weights).astype(dtype)
+  attn_weights_ = attn_weights
 
   # apply attention dropout
   if not deterministic and dropout_rate > 0.:
@@ -111,7 +112,7 @@ def dot_product_attention(query: Array,
 
   # return weighted sum over values for each query position
   return jnp.einsum('...hqk,...khd->...qhd', attn_weights, value,
-                    precision=precision)
+                    precision=precision), attn_weights_
 
 
 class MultiHeadDotProductAttention(Module):
@@ -242,7 +243,7 @@ class MultiHeadDotProductAttention(Module):
       dropout_rng = self.make_rng('dropout')
 
     # apply attention
-    x = self.attention_fn(
+    x, attn_weights = self.attention_fn(
         query,
         key,
         value,
@@ -263,7 +264,7 @@ class MultiHeadDotProductAttention(Module):
                        dtype=self.dtype,
                        precision=self.precision,
                        name='out')(x)
-    return out
+    return out, attn_weights
 
 
 class SelfAttention(MultiHeadDotProductAttention):
